@@ -17,6 +17,7 @@ out/
 
 ### Terraform ###
 **/.terraform/*
+**/.terraform
 *.tfstate
 *.tfstate.*
 
