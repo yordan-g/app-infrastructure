@@ -2,5 +2,5 @@
 
 cd "${ENV}" || exit
 
-terraform apply \
+terraform destroy \
   -var-file=../config/"${ENV}"/env.tfvars

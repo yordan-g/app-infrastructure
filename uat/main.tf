@@ -26,3 +26,9 @@ module "ec2" {
 
   env = var.env
 }
+
+module "vpc" {
+  source = "../modules/vpc"
+
+  env = var.env
+}
