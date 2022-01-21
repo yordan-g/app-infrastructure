@@ -62,3 +62,107 @@ resource "aws_route_table_association" "public_subnet_1_main_route_table" {
   subnet_id      = aws_subnet.public["eu-west-3a"].id
   route_table_id = aws_route_table.public_route_table.id
 }
+
+resource "aws_network_acl" "main" {
+  vpc_id = aws_vpc.vpc.id
+  subnet_ids = [aws_subnet.public["eu-west-3a"].id]
+
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 100
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 80
+    to_port    = 80
+  }
+
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 110
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 443
+    to_port    = 443
+  }
+
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 120
+    action     = "allow"
+    cidr_block = "${data.aws_ssm_parameter.home_public_ip_1.value}/32"
+    from_port  = 22
+    to_port    = 22
+  }
+
+  egress {
+    protocol   = "tcp"
+    rule_no    = 100
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 80
+    to_port    = 80
+  }
+
+  egress {
+    protocol   = "tcp"
+    rule_no    = 110
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 443
+    to_port    = 443
+  }
+
+  tags = {
+    Name = "main"
+  }
+}
+
+resource "aws_security_group" "web_server_sg" {
+  name        = "${var.env}-web-server-sg"
+  description = "Custom security group"
+  vpc_id      = aws_vpc.vpc.id
+
+  ingress {
+    description      = "Allow inbound HTTP access"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = [aws_vpc.vpc.cidr_block]
+  }
+
+  ingress {
+    description      = "Allow inbound HTTPS access"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks      = [aws_vpc.vpc.cidr_block]
+  }
+
+  ingress {
+    description      = "Allow inbound traffic from other instances associated with this security group"
+    from_port        = 0
+    to_port          = 0
+    # -1 is all protocols
+    protocol         = "-1"
+    self             = true
+  }
+
+  ingress {
+    description      = "Allow inbound SSH access"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["${data.aws_ssm_parameter.home_public_ip_1.value}/32"]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+}
+
+data "aws_ssm_parameter" "home_public_ip_1" {
+  name = "home-public-ip-1"
+}
